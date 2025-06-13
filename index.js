@@ -18,7 +18,7 @@ app.use("/api/products", productRoute);
 
 mongoose
   .connect(
-    "mongodb+srv://hamletgalstyan20:RekYNAPOiuXMXY7f@nodedbapi.qpuz730.mongodb.net/nodeDBApi?retryWrites=true&w=majority&appName=nodeDBApi"
+    "mongodb+srv://poturyan:8FQzQNWl0OHMuuvp@backenddb.ddridhj.mongodb.net/?retryWrites=true&w=majority&appName=BackendDB"
   )
   .then(() => {
     console.log("connected to databse");

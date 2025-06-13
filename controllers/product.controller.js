@@ -9,7 +9,7 @@ const getProducts = async (req, res) => {
   }
 };
 
-const getSingleProduct = async (req, res) => {
+const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const products = await Product.findById(id); // Վերցնում է բոլոր տվյալները
@@ -19,7 +19,7 @@ const getSingleProduct = async (req, res) => {
   }
 };
 
-const createProduct = async (req, res) => {
+const createdProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
     res.status(200).json(product);
@@ -55,9 +55,9 @@ const deleteProduct = async (req, res) => {
 };
 
 module.exports = {
-  getProducts,
-  getSingleProduct,
-  createProduct,
+   getProducts,
+  getProduct,
+  createdProduct,
   updateProduct,
   deleteProduct,
 };

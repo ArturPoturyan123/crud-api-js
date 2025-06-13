@@ -1,7 +1,6 @@
 {
   "name": "user-api",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -13,6 +12,8 @@
   "dependencies": {
     "express": "^5.1.0",
     "mongodb": "^6.17.0",
-    "mongoose": "^8.15.1"
-  }
+    "mongoose": "^8.15.2"
+  },
+  "devDependencies": {},
+  "description": ""
 }
