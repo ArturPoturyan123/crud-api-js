@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - User API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .profile-section {
+            margin-bottom: 30px;
+        }
+
+        .profile-section h2 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e1e5e9;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group input:disabled {
+            background: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #363;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #363;
+            display: none;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .logout-section {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>User Profile</h1>
+            <p>Manage your account information</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <div class="profile-section">
+            <h2>Personal Information</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" disabled placeholder="Your email address">
+                </div>
+
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" min="1" max="120" placeholder="Enter your age">
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" placeholder="Enter your address">
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn" id="updateBtn">
+                        <span class="spinner" id="updateSpinner" style="display: none;"></span>
+                        <span class="btn-text">Update Profile</span>
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteBtn">
+                        <span class="spinner" id="deleteSpinner" style="display: none;"></span>
+                        <span class="btn-text">Delete Account</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="logout-section">
+            <button type="button" class="btn btn-secondary" id="logoutBtn">Logout</button>
+            <button type="button" class="btn btn-secondary" id="refreshTokenBtn" style="margin-left: 10px;">Refresh Token</button>
+        </div>
+    </div>
+
+    <script>
+        const profileForm = document.getElementById('profileForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const updateBtn = document.getElementById('updateBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const refreshTokenBtn = document.getElementById('refreshTokenBtn');
+
+        function showMessage(element, message) {
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        function setLoading(button, loading) {
+            const spinner = button.querySelector('.spinner');
+            const btnText = button.querySelector('.btn-text');
+            
+            if (loading) {
+                button.classList.add('loading');
+                spinner.style.display = 'inline-block';
+            } else {
+                button.classList.remove('loading');
+                spinner.style.display = 'none';
+            }
+        }
+
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        function isAuthenticated() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/login';
+                return false;
+            }
+            return true;
+        }
+
+        // Debug function to test token
+        async function testToken() {
+            const token = getToken();
+            if (!token) {
+                console.error('No token found in localStorage');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/test-token', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                console.log('Token test result:', result);
+
+                if (response.ok) {
+                    console.log('✅ Token is valid');
+                } else {
+                    console.error('❌ Token validation failed:', result);
+                }
+            } catch (error) {
+                console.error('Token test error:', error);
+            }
+        }
+
+        async function loadProfile() {
+            if (!isAuthenticated()) return;
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.status === 401) {
+                    const errorData = await response.json();
+                    console.error('Authentication error:', errorData);
+                    
+                    if (errorData.message === 'Token has expired.' || errorData.message === 'Invalid token.') {
+                        showMessage(errorMessage, 'Your session has expired. Please login again.');
+                        localStorage.removeItem('token');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                        return;
+                    }
+                    
+                    showMessage(errorMessage, errorData.message || 'Authentication failed');
+                    return;
+                }
+
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('name').value = user.name || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('age').value = user.age || '';
+                    document.getElementById('address').value = user.address || '';
+                } else {
+                    const error = await response.json();
+                    showMessage(errorMessage, error.message || 'Failed to load profile');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showMessage(errorMessage, 'Network error. Please check your connection.');
+            }
+        }
+
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!isAuthenticated()) return;
+
+            const formData = new FormData(profileForm);
+            const data = {
+                name: formData.get('name'),
+                age: formData.get('age') ? parseInt(formData.get('age')) : null,
+                address: formData.get('address')
+            };
+
+            setLoading(updateBtn, true);
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.status === 401) {
+                    if (result.message === 'Token has expired.' || result.message === 'Invalid token.') {
+                        showMessage(errorMessage, 'Your session has expired. Please login again.');
+                        localStorage.removeItem('token');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                        return;
+                    }
+                    
+                    showMessage(errorMessage, result.message || 'Authentication failed');
+                    return;
+                }
+
+                if (response.ok) {
+                    showMessage(successMessage, result.message || 'Profile updated successfully!');
+                } else {
+                    showMessage(errorMessage, result.message || 'Failed to update profile');
+                    if (result.details) {
+                        console.error('Update error details:', result.details);
+                    }
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showMessage(errorMessage, 'Network error. Please check your connection.');
+            } finally {
+                setLoading(updateBtn, false);
+            }
+        });
+
+        deleteBtn.addEventListener('click', async () => {
+            if (!isAuthenticated()) return;
+
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                return;
+            }
+
+            setLoading(deleteBtn, true);
+
+            try {
+                const response = await fetch('/api/auth/profile', {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(successMessage, 'Account deleted successfully. Redirecting...');
+                    localStorage.removeItem('token');
+                    setTimeout(() => {
+                        window.location.href = '/register';
+                    }, 2000);
+                } else {
+                    showMessage(errorMessage, result.message || 'Failed to delete account');
+                }
+            } catch (error) {
+                showMessage(errorMessage, 'Network error. Please check your connection.');
+            } finally {
+                setLoading(deleteBtn, false);
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        });
+
+        refreshTokenBtn.addEventListener('click', async () => {
+            if (!isAuthenticated()) return;
+
+            setLoading(refreshTokenBtn, true);
+
+            try {
+                const response = await fetch('/api/auth/refresh-token', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store the new token
+                    if (result.token) {
+                        localStorage.setItem('token', result.token);
+                    }
+                    showMessage(successMessage, result.message || 'Token refreshed successfully!');
+                    
+                    // Test the new token
+                    setTimeout(() => {
+                        testToken();
+                    }, 1000);
+                } else {
+                    if (response.status === 401) {
+                        showMessage(errorMessage, 'Session expired. Please login again.');
+                        localStorage.removeItem('token');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                        return;
+                    }
+                    showMessage(errorMessage, result.message || 'Failed to refresh token');
+                }
+            } catch (error) {
+                console.error('Network error:', error);
+                showMessage(errorMessage, 'Network error. Please check your connection.');
+            } finally {
+                setLoading(refreshTokenBtn, false);
+            }
+        });
+
+        // Load profile on page load
+        loadProfile();
+
+        // Test token on page load
+        testToken();
+    </script>
+</body>
+</html> 
