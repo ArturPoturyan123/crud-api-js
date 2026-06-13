@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const mongoose = require('mongoose');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -29,6 +30,15 @@ const getUserById = async (req, res) => {
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, age, address } = req.body;
+
+    // If DB isn't connected, return a clear 503 to avoid Mongoose buffering timeouts
+    if (mongoose.connection.readyState !== 1) {
+      console.error('Registration attempted but database is not connected (state=', mongoose.connection.readyState, ')');
+      return res.status(503).json({
+        message: 'Service unavailable',
+        details: 'Database not connected. Check MONGO_URI and MongoDB server.'
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });

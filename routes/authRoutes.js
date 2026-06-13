@@ -4,10 +4,12 @@ const { verifyToken } = require('../middleware/auth');
 const router = Router();
 
 // Public auth routes
-router.get('/api/auth/register', userController.getAllUsers);
 router.post('/api/auth/register', userController.registerUser);
-router.get('/api/auth/login', userController.getAllUsers);
 router.post('/api/auth/login', userController.loginUser);
+
+// Protected user listing (admin/debug)
+router.get('/api/auth/users', verifyToken, userController.getAllUsers);
+router.get('/api/auth/users/:id', verifyToken, userController.getUserById);
 
 // Test endpoint for token validation
 router.get('/api/auth/test-token', verifyToken, (req, res) => {

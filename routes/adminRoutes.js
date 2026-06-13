@@ -15,9 +15,16 @@ router.delete("/api/admin/users", async (req, res) => {
   }
 });
 
+const { verifyToken } = require('../middleware/auth');
+
 // Clear all collections (users only)
-router.delete("/api/admin/clear-all", async (req, res) => {
+router.delete("/api/admin/clear-all", verifyToken, async (req, res) => {
   try {
+    // Optional: check role
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin role required' });
+    }
+
     const userResult = await User.deleteMany({});
     
     res.json({ 

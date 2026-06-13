@@ -36,7 +36,15 @@ app.use("/", authRoutes);
 
 // Health check route
 app.get("/health", (req, res) => {
-  res.status(200).json({ message: "Server is running", status: "OK" });
+  // Map mongoose.readyState to human readable status
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting'
+  };
+  const dbState = states[mongoose.connection.readyState] || 'unknown';
+  res.status(200).json({ message: "Server is running", status: "OK", db: { readyState: mongoose.connection.readyState, state: dbState } });
 });
 
 // 404 handler
