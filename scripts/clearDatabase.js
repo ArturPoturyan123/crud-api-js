@@ -1,14 +1,20 @@
 const mongoose = require("mongoose");
+require('dotenv').config();
 const User = require("../models/user.model.js");
 const Product = require("../models/product.model.js");
 
-// Database connection string
-const MONGODB_URI = "mongodb+srv://poturyan:8FQzQNWl0OHMuuvp@backenddb.ddridhj.mongodb.net/?retryWrites=true&w=majority&appName=BackendDB";
+// Database connection string from environment
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('Missing MONGO_URI environment variable. Set it in your .env or in the environment.');
+  process.exit(1);
+}
 
 async function clearDatabase() {
   try {
     // Connect to database
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log("Connected to database");
 
     // Clear all collections
