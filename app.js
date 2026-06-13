@@ -50,16 +50,17 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Something went wrong!" });
 });
 
-// Database connection
+// Database connection — use MONGO_URI from environment or local fallback
+require('dotenv').config();
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/crud-db';
+
 mongoose
-  .connect(
-    "mongodb+srv://poturyan:8FQzQNWl0OHMuuvp@backenddb.ddridhj.mongodb.net/?retryWrites=true&w=majority&appName=BackendDB"
-  )
+  .connect(mongoUri)
   .then(() => {
     console.log("Connected to database");
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log("Server is running on port 3000");
+      console.log(`Server is running on port ${PORT}`);
     });
   })
   .catch((error) => {
