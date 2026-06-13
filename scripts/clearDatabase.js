@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 require('dotenv').config();
 const User = require("../models/user.model.js");
-const Product = require("../models/product.model.js");
 
 // Database connection string from environment
 const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;

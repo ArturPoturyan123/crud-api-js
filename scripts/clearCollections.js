@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 require('dotenv').config();
 const User = require("../models/user.model.js");
-const Product = require("../models/product.model.js");
 
 // Database connection string from environment
 const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -21,8 +20,7 @@ async function clearCollections() {
     const userResult = await User.deleteMany({});
     console.log(`Deleted ${userResult.deletedCount} users`);
 
-    const productResult = await Product.deleteMany({});
-    console.log(`Deleted ${productResult.deletedCount} products`);
+    // no product collection in this site; only users cleared
 
     console.log("Collections cleared successfully!");
     
