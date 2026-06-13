@@ -66,10 +66,11 @@ const registerUser = async (req, res) => {
       address
     });
 
-    // Generate JWT token with proper payload (no exp field)
+    // Generate JWT token with proper payload (include role)
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
+      role: user.role,
       iat: Math.floor(Date.now() / 1000)
     };
 
@@ -128,10 +129,11 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Generate JWT token with proper payload (no exp field)
+    // Generate JWT token with proper payload (include role)
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
+      role: user.role,
       iat: Math.floor(Date.now() / 1000)
     };
 

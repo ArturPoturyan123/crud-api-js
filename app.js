@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes.js");
+const adminRoutes = require("./routes/adminRoutes.js");
 
 const app = express();
 
@@ -33,6 +34,9 @@ app.get("/profile", (req, res) => {
 
 // Auth routes
 app.use("/", authRoutes);
+
+// Admin routes
+app.use("/", adminRoutes);
 
 // Health check route
 app.get("/health", (req, res) => {
