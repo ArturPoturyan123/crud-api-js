@@ -48,7 +48,8 @@ app.get("/health", (req, res) => {
     3: 'disconnecting'
   };
   const dbState = states[mongoose.connection.readyState] || 'unknown';
-  res.status(200).json({ message: "Server is running", status: "OK", db: { readyState: mongoose.connection.readyState, state: dbState } });
+  res.status(200).json({ message: "Server is running", status: "OK", 
+    db: { readyState: mongoose.connection.readyState, state: dbState } });
 });
 
 // 404 handler
