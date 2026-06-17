@@ -22,25 +22,6 @@ router.delete("/api/admin/users", verifyToken, async (req, res) => {
   }
 });
 
-// Clear all collections (users only)
-router.delete("/api/admin/clear-all", verifyToken, async (req, res) => {
-  try {
-    const actor = await User.findById(req.user.userId);
-    if (!actor || actor.role !== 'admin') {
-      return res.status(403).json({ message: 'Admin role required' });
-    }
-
-    const userResult = await User.deleteMany({});
-    
-    res.json({ 
-      message: "All collections cleared successfully",
-      usersDeleted: userResult.deletedCount
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
     // Delete a single user by ID (admin only)
 router.delete('/api/admin/users/:id', verifyToken, async (req, res) => {
   try {
