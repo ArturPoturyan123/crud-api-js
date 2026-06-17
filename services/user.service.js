@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+/**
+ * Create JWT token with user payload
+ * @param {Object} payload - Token payload
+ * @returns {String} JWT token
+ */
 function createToken(payload) {
   return jwt.sign(
     payload,
@@ -11,12 +16,58 @@ function createToken(payload) {
   );
 }
 
+/**
+ * Validate password strength
+ * @param {String} password - Password to validate
+ * @returns {Object} { isValid, errors }
+ */
+function validatePassword(password) {
+  const errors = [];
+
+  if (!password || password.length < 8) {
+    errors.push('Password must be at least 8 characters');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Register a new user
+ * @param {Object} dto - User data (name, email, password, age, address)
+ * @returns {Object} { message, user, token }
+ */
 async function registerUser(dto) {
   const { name, email, password, age, address } = dto;
 
   if (mongoose.connection.readyState !== 1) {
     const err = new Error('Database not connected');
     err.status = 503;
+    throw err;
+  }
+
+  if (!email || !password) {
+    const err = new Error('Email and password are required');
+    err.status = 400;
+    throw err;
+  }
+
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.isValid) {
+    const err = new Error('Password does not meet requirements');
+    err.status = 400;
+    err.details = passwordValidation.errors;
     throw err;
   }
 
@@ -27,13 +78,6 @@ async function registerUser(dto) {
     throw err;
   }
 
-  if (!email || !password) {
-    const err = new Error('Email and password are required');
-    err.status = 400;
-    throw err;
-  }
-
-  // Hash password
   const salt = await bcrypt.genSalt(10);
   const hashed = await bcrypt.hash(password, salt);
 
@@ -60,6 +104,11 @@ async function registerUser(dto) {
   return { message: 'User registered successfully', user: userResponse, token };
 }
 
+/**
+ * Login user with email and password
+ * @param {Object} dto - { email, password }
+ * @returns {Object} { message, user, token }
+ */
 async function loginUser(dto) {
   const { email, password } = dto;
   if (!email || !password) {
@@ -97,6 +146,12 @@ async function loginUser(dto) {
   return { message: 'Login successful', user: userResponse, token };
 }
 
+/**
+ * Update current user profile
+ * @param {String} userId - User ID
+ * @param {Object} dto - { name, age, address }
+ * @returns {Object} { message, user }
+ */
 async function updateCurrentUser(userId, dto) {
   const { name, age, address } = dto;
 
@@ -135,6 +190,11 @@ async function updateCurrentUser(userId, dto) {
   return { message: 'Profile updated successfully', user };
 }
 
+/**
+ * Delete user account
+ * @param {String} userId - User ID to delete
+ * @returns {Object} { message }
+ */
 async function deleteCurrentUser(userId) {
   if (!userId) {
     const err = new Error('Authentication failed');
@@ -152,6 +212,11 @@ async function deleteCurrentUser(userId) {
   return { message: 'Account deleted successfully' };
 }
 
+/**
+ * Refresh JWT token for authenticated user
+ * @param {String} userId - User ID
+ * @returns {Object} { message, token, user }
+ */
 async function refreshToken(userId) {
   const user = await User.findById(userId).select('-password');
   if (!user) {
@@ -176,5 +241,6 @@ module.exports = {
   loginUser,
   updateCurrentUser,
   deleteCurrentUser,
-  refreshToken
+  refreshToken,
+  validatePassword
 };

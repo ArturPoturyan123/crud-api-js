@@ -1,7 +1,9 @@
 const User = require("../models/user.model");
 const userService = require('../services/user.service');
 
-// Get all users
+/**
+ * Get all users (admin only)
+ */
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({});
