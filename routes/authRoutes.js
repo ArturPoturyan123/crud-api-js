@@ -21,7 +21,7 @@ router.get('/api/auth/test-token', verifyToken, (req, res) => {
 });
 
 // Refresh token endpoint
-router.get('/api/auth/refresh-token', verifyToken, userController.refreshToken);
+router.post('/api/auth/refresh-token', verifyToken, userController.refreshToken);
 
 // Protected routes (require authentication)
 router.get('/api/auth/profile', verifyToken, userController.getCurrentUser);
