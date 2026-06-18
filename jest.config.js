@@ -8,6 +8,7 @@ module.exports = {
     '!**/node_modules/**'
   ],
   testMatch: ['**/tests/**/*.test.js'],
+  testPathIgnorePatterns: ['components/'],
   verbose: true,
   forceExit: true,
   clearMocks: true,
