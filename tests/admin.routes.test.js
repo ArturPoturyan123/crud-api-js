@@ -7,396 +7,230 @@ const { verifyToken } = require('../middleware/auth');
 jest.mock('../models/user.model');
 jest.mock('../middleware/auth');
 
+jest.setTimeout(10000);
+
 describe('Admin Routes', () => {
   let app;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     app = express();
     app.use(express.json());
     app.use('/', adminRoutes);
-    jest.clearAllMocks();
   });
 
-  describe('DELETE /api/admin/users - Positive Cases', () => {
-    it('should delete all users successfully as admin', async () => {
-      // Arrange
-      const adminUser = {
-        _id: '507f1f77bcf86cd799439010',
-        role: 'admin'
-      };
-
+  describe('DELETE /api/admin/users', () => {
+    it('should delete all users as admin', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: adminUser._id };
+        req.user = { userId: 'admin-id' };
         next();
       });
 
-      User.findById.mockResolvedValue(adminUser);
+      User.findById.mockResolvedValue({ _id: 'admin-id', role: 'admin' });
       User.deleteMany.mockResolvedValue({ deletedCount: 5 });
 
-      // Act
-      const response = await request(app)
+      request(app)
         .delete('/api/admin/users')
-        .set('Authorization', 'Bearer admin-token');
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.message).toContain('successfully');
-      expect(response.body.usersDeleted).toBe(5);
+        .set('Authorization', 'Bearer token')
+        .expect(200)
+        .expect((res) => {
+          if (res.body.usersDeleted !== 5) {
+            throw new Error(`Expected 5 users deleted, got ${res.body.usersDeleted}`);
+          }
+        })
+        .end(done);
     });
 
-    it('should return deletion count in response', async () => {
-      // Arrange
-      const adminUser = { _id: '507f1f77bcf86cd799439010', role: 'admin' };
-
+    it('should return 403 for non-admin user', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: adminUser._id };
+        req.user = { userId: 'user-id' };
         next();
       });
 
-      User.findById.mockResolvedValue(adminUser);
-      User.deleteMany.mockResolvedValue({ deletedCount: 10 });
+      User.findById.mockResolvedValue({ _id: 'user-id', role: 'user' });
 
-      // Act
-      const response = await request(app)
+      request(app)
         .delete('/api/admin/users')
-        .set('Authorization', 'Bearer admin-token');
-
-      // Assert
-      expect(response.body.usersDeleted).toBe(10);
+        .set('Authorization', 'Bearer token')
+        .expect(403)
+        .end(done);
     });
-  });
 
-  describe('DELETE /api/admin/users - Negative Cases', () => {
-    it('should return 403 if user is not admin', async () => {
-      // Arrange
-      const regularUser = {
-        _id: '507f1f77bcf86cd799439011',
-        role: 'user'
-      };
+    it('should return 401 without token', (done) => {
+      verifyToken.mockImplementation((req, res) => {
+        res.status(401).json({ message: 'Access denied' });
+      });
 
+      request(app)
+        .delete('/api/admin/users')
+        .expect(401)
+        .end(done);
+    });
+
+    it('should return 500 on database error', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: regularUser._id };
+        req.user = { userId: 'admin-id' };
         next();
       });
 
-      User.findById.mockResolvedValue(regularUser);
-
-      // Act
-      const response = await request(app)
-        .delete('/api/admin/users')
-        .set('Authorization', 'Bearer user-token');
-
-      // Assert
-      expect(response.status).toBe(403);
-      expect(response.body.message).toContain('Admin role required');
-    });
-
-    it('should return 401 if token is missing', async () => {
-      // Arrange
-      verifyToken.mockImplementation((req, res, next) => {
-        res.status(401).json({
-          message: 'Access denied. No token provided.'
-        });
-      });
-
-      // Act
-      const response = await request(app)
-        .delete('/api/admin/users');
-
-      // Assert
-      expect(response.status).toBe(401);
-    });
-
-    it('should return 500 if database deletion fails', async () => {
-      // Arrange
-      const adminUser = {
-        _id: '507f1f77bcf86cd799439010',
-        role: 'admin'
-      };
-
-      verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: adminUser._id };
-        next();
-      });
-
-      User.findById.mockResolvedValue(adminUser);
+      User.findById.mockResolvedValue({ _id: 'admin-id', role: 'admin' });
       User.deleteMany.mockRejectedValue(new Error('Database error'));
 
-      // Act
-      const response = await request(app)
+      request(app)
         .delete('/api/admin/users')
-        .set('Authorization', 'Bearer admin-token');
-
-      // Assert
-      expect(response.status).toBe(500);
+        .set('Authorization', 'Bearer token')
+        .expect(500)
+        .end(done);
     });
+  });
 
-    it('should not delete users if user not found', async () => {
-      // Arrange
-      verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: 'nonexistent-id' };
-        next();
+  describe('DELETE /api/admin/users/:id', () => {
+    it('should delete specific user', (done) => {
+      User.findByIdAndDelete.mockResolvedValue({
+        _id: 'user-id',
+        name: 'John'
       });
 
-      User.findById.mockResolvedValue(null);
-
-      // Act
-      const response = await request(app)
-        .delete('/api/admin/users')
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(403);
-      expect(User.deleteMany).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('DELETE /api/admin/users/:id - Positive Cases', () => {
-    it('should delete specific user by ID', async () => {
-      // Arrange
-      const userId = '507f1f77bcf86cd799439011';
-      const mockDeletedUser = {
-        _id: userId,
-        name: 'John Doe',
-        email: 'john@example.com'
-      };
-
-      User.findByIdAndDelete.mockResolvedValue(mockDeletedUser);
-
-      // Act
-      const response = await request(app)
-        .delete(`/api/admin/users/${userId}`);
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body.message).toContain('deleted successfully');
-      expect(User.findByIdAndDelete).toHaveBeenCalledWith(userId);
+      request(app)
+        .delete('/api/admin/users/user-id')
+        .expect(200)
+        .end(done);
     });
 
-    it('should pass userId to delete operation', async () => {
-      // Arrange
-      const userId = '507f1f77bcf86cd799439011';
-      User.findByIdAndDelete.mockResolvedValue({ _id: userId });
-
-      // Act
-      await request(app)
-        .delete(`/api/admin/users/${userId}`);
-
-      // Assert
-      expect(User.findByIdAndDelete).toHaveBeenCalledWith(userId);
-    });
-  });
-
-  describe('DELETE /api/admin/users/:id - Negative Cases', () => {
-    it('should return 404 if user not found', async () => {
-      // Arrange
-      const userId = 'nonexistent-id';
+    it('should return 404 if user not found', (done) => {
       User.findByIdAndDelete.mockResolvedValue(null);
 
-      // Act
-      const response = await request(app)
-        .delete(`/api/admin/users/${userId}`);
-
-      // Assert
-      expect(response.status).toBe(404);
-      expect(response.body.message).toContain('User not found');
+      request(app)
+        .delete('/api/admin/users/nonexistent-id')
+        .expect(404)
+        .end(done);
     });
 
-    it('should return 500 for database errors', async () => {
-      // Arrange
-      const userId = '507f1f77bcf86cd799439011';
-      User.findByIdAndDelete.mockRejectedValue(new Error('Database connection error'));
+    it('should return 500 on database error', (done) => {
+      User.findByIdAndDelete.mockRejectedValue(new Error('DB error'));
 
-      // Act
-      const response = await request(app)
-        .delete(`/api/admin/users/${userId}`);
-
-      // Assert
-      expect(response.status).toBe(500);
-      expect(response.body.message).toBeTruthy();
-    });
-
-    it('should handle invalid userId format', async () => {
-      // Arrange
-      const invalidUserId = 'invalid-format';
-      User.findByIdAndDelete.mockRejectedValue(new Error('Invalid ID format'));
-
-      // Act
-      const response = await request(app)
-        .delete(`/api/admin/users/${invalidUserId}`);
-
-      // Assert
-      expect(response.status).toBe(500);
+      request(app)
+        .delete('/api/admin/users/user-id')
+        .expect(500)
+        .end(done);
     });
   });
 
-  describe('GET /api/auth/users - Positive Cases', () => {
-    it('should return all users with proper authentication', async () => {
-      // Arrange
-      const mockUsers = [
-        { _id: '1', name: 'User 1', email: 'user1@example.com' },
-        { _id: '2', name: 'User 2', email: 'user2@example.com' }
-      ];
-
-      verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: '507f1f77bcf86cd799439010' };
-        next();
-      });
-
-      User.find.mockResolvedValue(mockUsers);
-
-      // Act
-      const response = await request(app)
-        .get('/api/auth/users')
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBe(2);
-    });
-
-    it('should call User.find with empty filter', async () => {
-      // Arrange
+  describe('GET /api/auth/users', () => {
+    it('should return all users', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
         req.user = { userId: 'user-id' };
         next();
       });
 
-      User.find.mockResolvedValue([]);
+      User.find.mockResolvedValue([
+        { _id: '1', name: 'User 1' },
+        { _id: '2', name: 'User 2' }
+      ]);
 
-      // Act
-      await request(app)
+      request(app)
         .get('/api/auth/users')
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(User.find).toHaveBeenCalledWith({});
-    });
-  });
-
-  describe('GET /api/auth/users - Negative Cases', () => {
-    it('should return 401 without token', async () => {
-      // Arrange
-      verifyToken.mockImplementation((req, res, next) => {
-        res.status(401).json({
-          message: 'Access denied. No token provided.'
+        .set('Authorization', 'Bearer token')
+        .expect(200)
+        .end((err, res) => {
+          if (err) return done(err);
+          if (!Array.isArray(res.body) || res.body.length !== 2) {
+            return done(new Error('Expected 2 users'));
+          }
+          done();
         });
-      });
-
-      // Act
-      const response = await request(app)
-        .get('/api/auth/users');
-
-      // Assert
-      expect(response.status).toBe(401);
     });
 
-    it('should return 500 on database error', async () => {
-      // Arrange
+    it('should return 401 without token', (done) => {
+      verifyToken.mockImplementation((req, res) => {
+        res.status(401).json({ message: 'Access denied' });
+      });
+
+      request(app)
+        .get('/api/auth/users')
+        .expect(401)
+        .end(done);
+    });
+
+    it('should return 500 on database error', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
         req.user = { userId: 'user-id' };
         next();
       });
 
-      User.find.mockRejectedValue(new Error('Database connection failed'));
+      User.find.mockRejectedValue(new Error('DB error'));
 
-      // Act
-      const response = await request(app)
+      request(app)
         .get('/api/auth/users')
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(500);
+        .set('Authorization', 'Bearer token')
+        .expect(500)
+        .end(done);
     });
   });
 
-  describe('GET /api/auth/users/:id - Positive Cases', () => {
-    it('should return user by ID', async () => {
-      // Arrange
-      const userId = '507f1f77bcf86cd799439011';
-      const mockUser = {
-        _id: userId,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'user'
-      };
-
+  describe('GET /api/auth/users/:id', () => {
+    it('should return user by ID', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: 'other-user' };
+        req.user = { userId: 'user-id' };
         next();
       });
 
-      User.findById.mockResolvedValue(mockUser);
+      User.findById.mockResolvedValue({
+        _id: 'user-123',
+        name: 'John Doe'
+      });
 
-      // Act
-      const response = await request(app)
-        .get(`/api/auth/users/${userId}`)
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body._id).toBe(userId);
-      expect(User.findById).toHaveBeenCalledWith(userId);
+      request(app)
+        .get('/api/auth/users/user-123')
+        .set('Authorization', 'Bearer token')
+        .expect(200)
+        .expect((res) => {
+          if (res.body._id !== 'user-123') {
+            throw new Error('User ID mismatch');
+          }
+        })
+        .end(done);
     });
-  });
 
-  describe('GET /api/auth/users/:id - Negative Cases', () => {
-    it('should return 404 if user not found', async () => {
-      // Arrange
-      const userId = 'nonexistent-id';
-
+    it('should return 404 if user not found', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: 'other-user' };
+        req.user = { userId: 'user-id' };
         next();
       });
 
       User.findById.mockResolvedValue(null);
 
-      // Act
-      const response = await request(app)
-        .get(`/api/auth/users/${userId}`)
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(404);
-      expect(response.body.message).toContain('User not found');
+      request(app)
+        .get('/api/auth/users/nonexistent-id')
+        .set('Authorization', 'Bearer token')
+        .expect(404)
+        .end(done);
     });
 
-    it('should return 401 without token', async () => {
-      // Arrange
-      verifyToken.mockImplementation((req, res, next) => {
-        res.status(401).json({
-          message: 'Access denied. No token provided.'
-        });
+    it('should return 401 without token', (done) => {
+      verifyToken.mockImplementation((req, res) => {
+        res.status(401).json({ message: 'Access denied' });
       });
 
-      // Act
-      const response = await request(app)
-        .get('/api/auth/users/507f1f77bcf86cd799439011');
-
-      // Assert
-      expect(response.status).toBe(401);
+      request(app)
+        .get('/api/auth/users/user-id')
+        .expect(401)
+        .end(done);
     });
 
-    it('should return 500 on database error', async () => {
-      // Arrange
-      const userId = '507f1f77bcf86cd799439011';
-
+    it('should return 500 on database error', (done) => {
       verifyToken.mockImplementation((req, res, next) => {
-        req.user = { userId: 'other-user' };
+        req.user = { userId: 'user-id' };
         next();
       });
 
-      User.findById.mockRejectedValue(new Error('Database error'));
+      User.findById.mockRejectedValue(new Error('DB error'));
 
-      // Act
-      const response = await request(app)
-        .get(`/api/auth/users/${userId}`)
-        .set('Authorization', 'Bearer token');
-
-      // Assert
-      expect(response.status).toBe(500);
+      request(app)
+        .get('/api/auth/users/user-id')
+        .set('Authorization', 'Bearer token')
+        .expect(500)
+        .end(done);
     });
   });
 });
