@@ -5,9 +5,10 @@ module.exports = {
     'controllers/**/*.js',
     'services/**/*.js',
     'routes/**/*.js',
+    'utils/**/*.js',
     '!**/node_modules/**'
   ],
-  testMatch: ['**/tests/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.js', '**/utils/**/*.test.js'],
   testPathIgnorePatterns: ['components/'],
   verbose: true,
   forceExit: true,
