@@ -108,7 +108,16 @@ const updateCurrentUser = async (req, res) => {
   } catch (err) {
     console.error('Profile update error:', err);
     const status = err.status || 400;
-    res.status(status).json({ message: err.message, details: err.details || err.message });
+    res.status(status).json({
+      success: false,
+      status: status,
+      error: {
+        code: err.code || 'VALIDATION_ERROR',
+        message: err.message,
+        details: err.details || null
+      },
+      timestamp: new Date().toISOString()
+    });
   }
 };
 

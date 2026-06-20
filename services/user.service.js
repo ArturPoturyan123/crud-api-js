@@ -172,10 +172,12 @@ async function updateCurrentUser(userId, dto) {
   if (disallowedFields.length > 0) {
     const err = new Error(`Cannot update fields: ${disallowedFields.join(', ')}`);
     err.status = 400;
+    err.code = 'FORBIDDEN_FIELDS';
     err.details = {
-      message: 'Unauthorized field update attempt',
+      message: 'Unauthorized field update attempt - These fields are read-only',
       attemptedFields: disallowedFields,
-      allowedFields: ALLOWED_FIELDS
+      allowedFields: ALLOWED_FIELDS,
+      help: `You can only update: ${ALLOWED_FIELDS.join(', ')}`
     };
     throw err;
   }
