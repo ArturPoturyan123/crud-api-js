@@ -153,13 +153,34 @@ async function loginUser(dto) {
  * @returns {Object} { message, user }
  */
 async function updateCurrentUser(userId, dto) {
-  const { name, age, address } = dto;
-
   if (!userId) {
     const err = new Error('Authentication failed');
     err.status = 401;
     throw err;
   }
+
+  // Whitelist: Only these fields are allowed to be updated
+  const ALLOWED_FIELDS = ['name', 'age', 'address'];
+
+  // Check if user sent any disallowed fields (e.g., role, email, password)
+  const sentFields = Object.keys(dto);
+  const disallowedFields = sentFields.filter(field =>
+    !ALLOWED_FIELDS.includes(field)
+  );
+
+  // Reject if user tries to update forbidden fields
+  if (disallowedFields.length > 0) {
+    const err = new Error(`Cannot update fields: ${disallowedFields.join(', ')}`);
+    err.status = 400;
+    err.details = {
+      message: 'Unauthorized field update attempt',
+      attemptedFields: disallowedFields,
+      allowedFields: ALLOWED_FIELDS
+    };
+    throw err;
+  }
+
+  const { name, age, address } = dto;
 
   const updateData = {};
   if (name !== undefined) updateData.name = name;
